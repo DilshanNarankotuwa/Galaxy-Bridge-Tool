@@ -1,0 +1,93 @@
+<tool id="docking_tool" name="Molecular_Docking" version="@TOOL_VERSION@+galaxy@GALAXY_VERSION@">
+    <macros>
+        <token name="@TOOL_VERSION@">1.5.7</token>
+        <token name="@GALAXY_VERSION@">0</token>
+    </macros>
+    <description></description>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">mgltools</requirement>
+    </requirements>
+    <stdio>
+        <exit_code range="1" />
+    </stdio>
+    <command><![CDATA[
+    	cp $__tool_directory__/docking.py . &&
+    	cp $__tool_directory__/convert.py . &&
+    	
+    	ln -s $ligand2 ./ligand2.mol2 && prepare_ligand4.py -l ./ligand2.mol2 -v -o ligand2.pdbqt &&
+     	ln -s $protein ./protein.pdb && prepare_receptor4.py -r ./protein.pdb -v -o protein.pdbqt &&
+        ln -s $ligand1 ./ligand1.sdf &&
+        
+        conda activate base &&
+        
+        python docking.py ligand1.sdf ligand2.pdbqt protein.pdbqt output_folder $poses $box_size_x $box_size_y $box_size_z $exhaustiveness docking_scores $number_of_docking_scores &&
+        
+        python convert.py ./output_folder ./docked_ligand_porses &&
+        				 
+        tar cf docked_ligand_porses.tar docked_ligand_porses/ && 
+	cp docked_ligand_porses.tar $docked_ligand_porses &&
+	cp docking_scores $docking_scores 
+    ]]></command>
+    <inputs>
+    	<param type="data" name="protein" format="pdb" label="protein PDB" />
+    	
+    	<param type="data" name="ligand2" format="mol2" label="Reference ligand" />
+    	
+        <param type="data" name="ligand1" format="sdf" label="Ligand to Dock" />     	
+        
+        <param type="text" name="poses" format="txt" label="Number of poses to output" value="10"/>
+        
+        <param type="text" name="exhaustiveness" format="txt" label="exhaustiveness" value="32"/>
+        
+        <param type="text" name="box_size_x" label="Box size X (Å)" value="20" />
+        <param type="text" name="box_size_y" label="Box size Y (Å)" value="20" />
+        <param type="text" name="box_size_z" label="Box size Z (Å)" value="20" />
+        
+        <param type="text" name="number_of_docking_scores" format="txt" label="Number of top docking poses" />
+    </inputs>
+    <outputs>
+        <data name="docked_ligand_porses" format="tar" />
+        <data name="docking_scores" format="txt"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+
+.. class:: infomark
+
+**What this tool does:**
+
+The docking tool is designed to automate the process of docking ligands to a protein using AutoDock Vina, integrated with essential molecular preparation steps. It takes as input a known ligand (in .mol2 or .sdf format), an unknown ligand (in .sdf format), and a protein structure (in PDB format).Users can customize the docking process by specifying parameters such as the number of poses to output, the exhaustiveness of the docking simulation, and the size of the docking box (along the X, Y, and Z axes). Once the preparation is complete, the tool performs the docking, generating energy-minimized poses and identifying the most likely binding modes of the ligands to the protein. The resulting docking poses are stored in a designated output folder, which is then packaged into a compressed tar file for easy access and further analysis. This tool streamlines ligand-protein docking workflows, enabling efficient virtual screening and aiding in drug discovery and molecular interaction research.
+
+-----
+
+.. class:: infomark
+
+**Inputs:**
+
+* **Known ligand :** This is the known ligand (usually the one already bound to the protein or a reference ligand). You can upload it in .mol2 or .sdf format.
+
+* **Unknown ligand:** You need to upload the ligand that you want to test for docking with the protein. The ligand should be in .sdf format, although the tool will automatically convert it to .mol2 format for processing.
+
+* **Protein:** Provide the protein structure in .pdb format. This is the receptor to which the ligands will be docked.
+
+* **Cleanup Option:** This option allows you to prepare the ligands by removing certain atom types before docking. You can choose from:None: No atoms are removed.Non-polar Hydrogens and Lone Pairs: Removes non-polar hydrogens and lone pairs.Non-polar Hydrogens: Removes only non-polar hydrogens.Lone Pairs: Removes only lone pairs.
+
+* **Number of Poses:** Specify how many different docking poses (binding orientations) you want to generate. The default is 10 poses.
+
+* **Exhaustiveness:** This parameter controls how thorough the docking search is. A higher value means a more exhaustive search, but it may take longer to complete. The default is 32.
+
+* **Box Size (X, Y, Z):** These values define the dimensions of the docking box in angstroms (Å), which determines the region of the protein to be explored for docking. The default size is 20 Å for each axis (X, Y, Z).
+
+.. class:: infomark
+
+**Output:**
+
+* **Tar Archive:** The docked poses and any other relevant output files are compressed into a .tar archive. This archive will be named according to the output folder and contains all the docking results, making it easier to download and organize the files.Tar file includes Docked Poses (PDB format) and Docking Metadata (Text file).Docked Poses (PDB format): The tool saves the docked poses of the ligands in PDB format. These files represent the different binding orientations of the ligands with the protein.Docking Metadata (Text file): A .txt file containing metadata for each docking run. This file includes information such as: Centroid of the ligand,Box size used for docking,Exhaustiveness level,The number of poses generated,Energy minimization results and Docking scores for each pose.
+
+
+    ]]></help>
+    <citations>
+        <citation type="doi">10.1002/jcc.21334</citation>
+    </citations>
+</tool>
